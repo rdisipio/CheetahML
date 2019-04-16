@@ -93,7 +93,7 @@ model.compile(optimizer='adam',
               loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 
-model.fit(ds, epochs=30, steps_per_epoch=3)
+model.fit(ds, epochs=30, steps_per_epoch=5)
 print("INFO: fit step done.")
 
 test_loss, test_acc = model.evaluate(ds, steps=3)
