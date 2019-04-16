@@ -32,9 +32,13 @@ all_image_labels = [label_to_index[pathlib.Path(path).parent.name]
 
 print("INFO: First 10 labels indices: ", all_image_labels[:10])
 
+SIZEX = 64
+SIZEY = 64
+NCHAN = 3
 
-def preprocess_image(image, sizex=128, sizey=128):
-    image = tf.image.decode_jpeg(image, channels=3)
+
+def preprocess_image(image, sizex=SIZEX, sizey=SIZEY):
+    image = tf.image.decode_jpeg(image, channels=NCHAN)
     image = tf.image.resize(image, [sizex, sizey])
     image /= 255.0  # normalize to [0,1] range
     return image
@@ -56,7 +60,6 @@ label_ds = tf.data.Dataset.from_tensor_slices(
     tf.cast(all_image_labels, tf.int64))
 image_label_ds = tf.data.Dataset.zip((image_ds, label_ds))
 
-
 ds = tf.data.Dataset.from_tensor_slices((all_image_paths, all_image_labels))
 
 
@@ -66,3 +69,32 @@ def load_and_preprocess_from_path_label(path, label):
 
 image_label_ds = ds.map(load_and_preprocess_from_path_label)
 image_label_ds
+
+BATCH_SIZE = 32
+ds = image_label_ds.shuffle(buffer_size=image_count)
+ds = ds.repeat()
+ds = ds.batch(BATCH_SIZE)
+ds = ds.prefetch(buffer_size=AUTOTUNE)
+
+from tensorflow.keras import datasets, layers, models
+model = models.Sequential()
+model.add(layers.Conv2D(32, (3, 3), activation='relu',
+                        input_shape=(SIZEX, SIZEY, NCHAN)))
+model.add(layers.MaxPooling2D((2, 2)))
+model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+model.add(layers.MaxPooling2D((2, 2)))
+model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+model.add(layers.Flatten())
+model.add(layers.Dense(64, activation='relu'))
+model.add(layers.Dense(3, activation='softmax'))
+model.summary()
+
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+model.fit(ds, epochs=30, steps_per_epoch=3)
+print("INFO: fit step done.")
+
+test_loss, test_acc = model.evaluate(ds, steps=3)
+print("INFO: test accuracy:", test_acc)
