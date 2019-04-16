@@ -8,7 +8,13 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 import pathlib
 
-data_root = pathlib.Path("images")
+data_url='https://drive.google.com/open?id=1OySoPTyWU-2_LyEN6RZjN0q5FacK4gme'
+data_root_orig = tf.keras.utils.get_file(origin=data_url, fname='CheetahML_images.tar.gz', extract=True, archive_format='tar' )
+data_root = pathlib.Path(data_root_orig)
+print("INFO: data path:", data_root)
+#for item in data_root.iterdir():
+#  print(item)
+#data_root = pathlib.Path("images")
 print(data_root)
 for item in data_root.iterdir():
     print(item)
